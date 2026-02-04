@@ -1,64 +1,26 @@
-.dynamic-tokens-config {
-  padding: 0.5rem;
-}
-
-.dynamic-tokens-config .notes {
-  font-size: 0.85rem;
-  color: var(--color-text-dark-secondary, #666);
-  margin-bottom: 0.75rem;
-}
-
-.dynamic-tokens-thresholds {
+.dynamic-tokens-fieldset .dynamic-tokens-thresholds {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.threshold-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.threshold-field {
+.dynamic-tokens-fieldset .threshold-row .form-fields {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  flex: 0 0 auto;
 }
 
-.threshold-field label {
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.threshold-field input.dt-threshold {
+.dynamic-tokens-fieldset .threshold-row .dt-threshold {
   width: 4rem;
   text-align: center;
 }
 
-.threshold-field span {
-  font-size: 0.85rem;
-}
-
-.threshold-image-field {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+.dynamic-tokens-fieldset .threshold-row .dt-img {
   flex: 1 1 auto;
 }
 
-.threshold-image-field input.dt-img {
-  flex: 1 1 auto;
-}
-
-.threshold-image-field .dt-file-picker,
-.threshold-row .dt-remove {
+.dynamic-tokens-fieldset .threshold-row .dt-file-picker,
+.dynamic-tokens-fieldset .threshold-row .dt-remove {
   flex: 0 0 auto;
-  line-height: 1;
-}
-
-.dt-add-threshold {
-  margin-top: 0.25rem;
 }

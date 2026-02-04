@@ -6,7 +6,7 @@ const MODULE_ID = "dynamic-tokens";
 
 /**
  * Resolve a dot-delimited path on an object.
- * e.g. resolvePath(actor, "system.attributes.hp") → actor.system.attributes.hp
+ * e.g. resolvePath(actor, "system.resources.hitPoints") → actor.system.resources.hitPoints
  */
 function resolvePath(obj, path) {
   return path.split(".").reduce((o, key) => o?.[key], obj);
@@ -45,56 +45,54 @@ function resolveImage(hpPercent, thresholds) {
 Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "hpPath", {
     name: "HP Attribute Path",
-    hint: 'The dot-path on the actor where HP lives. The module reads .value and .max from this path. Default works for D&D 5e.',
+    hint: 'The dot-path on the actor where HP lives. The module reads .value and .max from this path. Example for Daggerheart: system.resources.hitPoints. Example for D&D 5e: system.attributes.hp.',
     scope: "world",
     config: true,
     type: String,
-    default: "system.attributes.hp",
+    default: "system.resources.hitPoints",
   });
 });
 
 /* ---------------------------------------- */
-/*  Render TokenConfig — inject threshold UI */
+/*  Render TokenConfig — inject into         */
+/*  appearance tab as a fieldset             */
 /* ---------------------------------------- */
 
 /**
- * Shared handler for injecting the Dynamic Tokens tab into token config sheets.
+ * Shared handler for injecting the Dynamic Tokens fieldset into the appearance tab.
  */
 async function onRenderTokenConfig(app, element) {
   const tokenDoc = app.document ?? app.token;
   if (!tokenDoc) return;
 
   // Avoid duplicate injection on re-render
-  if (element.querySelector('[data-tab="dynamic-tokens"]')) return;
+  if (element.querySelector(".dynamic-tokens-fieldset")) return;
+
+  // Find the appearance tab
+  const appearanceTab = element.querySelector('[data-tab="appearance"]');
+  if (!appearanceTab) return;
 
   // Load the handlebars template
   const templatePath = `modules/${MODULE_ID}/templates/token-config-tab.hbs`;
   const thresholds = getThresholds(tokenDoc) ?? [];
   const html = await renderTemplate(templatePath, { thresholds });
 
-  // Find the nav bar and the tab content area
-  const nav = element.querySelector("nav.sheet-tabs, nav.tabs, [role='tablist']");
-  const body = element.querySelector(".sheet-body, .window-content form, form");
-  if (!nav || !body) return;
+  // Create a fieldset matching Foundry's native styling
+  const fieldset = document.createElement("fieldset");
+  fieldset.classList.add("dynamic-tokens-fieldset");
+  const legend = document.createElement("legend");
+  legend.textContent = "Dynamic Token Images";
+  fieldset.appendChild(legend);
 
-  // Add a nav tab button
-  const tabBtn = document.createElement("a");
-  tabBtn.classList.add("item");
-  tabBtn.dataset.tab = "dynamic-tokens";
-  tabBtn.dataset.group = "main";
-  tabBtn.innerHTML = `<i class="fas fa-exchange-alt"></i> Dynamic Tokens`;
-  nav.appendChild(tabBtn);
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  fieldset.appendChild(container);
 
-  // Add the tab content section
-  const section = document.createElement("div");
-  section.classList.add("tab");
-  section.dataset.tab = "dynamic-tokens";
-  section.dataset.group = "main";
-  section.innerHTML = html;
-  body.appendChild(section);
+  // Append at the bottom of the appearance tab
+  appearanceTab.appendChild(fieldset);
 
-  // Wire up event listeners inside our section
-  activateListeners(section, tokenDoc);
+  // Wire up event listeners
+  activateListeners(fieldset, tokenDoc);
 }
 
 // Hook into both placed-token config and prototype-token config
@@ -102,49 +100,47 @@ Hooks.on("renderTokenConfig", (app, element, context, options) => onRenderTokenC
 Hooks.on("renderPrototypeTokenConfig", (app, element, context, options) => onRenderTokenConfig(app, element));
 
 /**
- * Attach interactive listeners to the dynamic-tokens tab section.
+ * Attach interactive listeners to the dynamic-tokens fieldset.
  */
-function activateListeners(section, tokenDoc) {
+function activateListeners(fieldset, tokenDoc) {
   // "Add Threshold" button
-  section.querySelector(".dt-add-threshold")?.addEventListener("click", () => {
-    const container = section.querySelector(".dynamic-tokens-thresholds");
+  fieldset.querySelector(".dt-add-threshold")?.addEventListener("click", () => {
+    const container = fieldset.querySelector(".dynamic-tokens-thresholds");
     const index = container.querySelectorAll(".threshold-row").length;
     const row = document.createElement("div");
     row.classList.add("threshold-row");
     row.dataset.index = index;
     row.innerHTML = `
-      <div class="threshold-field">
+      <div class="form-fields">
         <label>HP &le;</label>
         <input type="number" class="dt-threshold" value="100" min="0" max="100" step="1" placeholder="%" />
         <span>%</span>
-      </div>
-      <div class="threshold-image-field">
         <input type="text" class="dt-img" value="" placeholder="path/to/image.png" />
-        <button type="button" class="dt-file-picker" data-index="${index}" title="Browse Files">
-          <i class="fas fa-file-import"></i>
+        <button type="button" class="dt-file-picker" title="Browse Files">
+          <i class="fa-solid fa-file-import"></i>
+        </button>
+        <button type="button" class="dt-remove" title="Remove Threshold">
+          <i class="fa-solid fa-trash"></i>
         </button>
       </div>
-      <button type="button" class="dt-remove" data-index="${index}" title="Remove Threshold">
-        <i class="fas fa-trash"></i>
-      </button>
     `;
     container.appendChild(row);
-    activateRowListeners(row, section, tokenDoc);
+    activateRowListeners(row, fieldset, tokenDoc);
   });
 
   // Existing rows
-  section.querySelectorAll(".threshold-row").forEach((row) => {
-    activateRowListeners(row, section, tokenDoc);
+  fieldset.querySelectorAll(".threshold-row").forEach((row) => {
+    activateRowListeners(row, fieldset, tokenDoc);
   });
 
   // Auto-save on any input change (threshold value or image path)
-  section.addEventListener("change", () => saveThresholds(section, tokenDoc));
+  fieldset.addEventListener("change", () => saveThresholds(fieldset, tokenDoc));
 }
 
 /**
  * Wire up per-row buttons (file picker, delete).
  */
-function activateRowListeners(row, section, tokenDoc) {
+function activateRowListeners(row, fieldset, tokenDoc) {
   // File picker button
   row.querySelector(".dt-file-picker")?.addEventListener("click", () => {
     const imgInput = row.querySelector(".dt-img");
@@ -153,7 +149,7 @@ function activateRowListeners(row, section, tokenDoc) {
       current: imgInput.value,
       callback: (path) => {
         imgInput.value = path;
-        saveThresholds(section, tokenDoc);
+        saveThresholds(fieldset, tokenDoc);
       },
     }).browse();
   });
@@ -161,15 +157,15 @@ function activateRowListeners(row, section, tokenDoc) {
   // Delete button
   row.querySelector(".dt-remove")?.addEventListener("click", () => {
     row.remove();
-    saveThresholds(section, tokenDoc);
+    saveThresholds(fieldset, tokenDoc);
   });
 }
 
 /**
  * Read all threshold rows from the DOM and persist to token flags.
  */
-async function saveThresholds(section, tokenDoc) {
-  const rows = section.querySelectorAll(".threshold-row");
+async function saveThresholds(fieldset, tokenDoc) {
+  const rows = fieldset.querySelectorAll(".threshold-row");
   const thresholds = [];
   rows.forEach((row) => {
     const threshold = Number(row.querySelector(".dt-threshold")?.value ?? 100);
