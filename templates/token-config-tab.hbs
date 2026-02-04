@@ -1,0 +1,28 @@
+<div class="dynamic-tokens-config">
+  <p class="notes">Configure token image thresholds based on HP percentage. Images swap automatically when HP crosses a threshold.</p>
+
+  <div class="dynamic-tokens-thresholds">
+    {{#each thresholds}}
+    <div class="threshold-row" data-index="{{@index}}">
+      <div class="threshold-field">
+        <label>HP &le;</label>
+        <input type="number" class="dt-threshold" value="{{this.threshold}}" min="0" max="100" step="1" placeholder="%" />
+        <span>%</span>
+      </div>
+      <div class="threshold-image-field">
+        <input type="text" class="dt-img" value="{{this.img}}" placeholder="path/to/image.png" />
+        <button type="button" class="dt-file-picker" data-index="{{@index}}" title="Browse Files">
+          <i class="fas fa-file-import"></i>
+        </button>
+      </div>
+      <button type="button" class="dt-remove" data-index="{{@index}}" title="Remove Threshold">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+    {{/each}}
+  </div>
+
+  <button type="button" class="dt-add-threshold">
+    <i class="fas fa-plus"></i> Add Threshold
+  </button>
+</div>
