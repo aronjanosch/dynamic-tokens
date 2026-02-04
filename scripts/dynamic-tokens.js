@@ -1,4 +1,5 @@
 const MODULE_ID = "dynamic-tokens";
+const DEFAULT_ATTRIBUTE = "resources.hitPoints";
 
 /* ---------------------------------------- */
 /*  Helpers                                  */
@@ -6,7 +7,6 @@ const MODULE_ID = "dynamic-tokens";
 
 /**
  * Resolve a dot-delimited path on an object.
- * e.g. resolvePath(actor, "system.resources.hitPoints") → actor.system.resources.hitPoints
  */
 function resolvePath(obj, path) {
   return path.split(".").reduce((o, key) => o?.[key], obj);
@@ -14,53 +14,39 @@ function resolvePath(obj, path) {
 
 /**
  * Read thresholds from a token document's flags.
- * @returns {Array<{threshold: number, img: string}>|null}
  */
 function getThresholds(tokenDoc) {
   return tokenDoc.getFlag(MODULE_ID, "thresholds") ?? null;
 }
 
 /**
- * Given an HP percentage (0-100) and a sorted-descending array of thresholds,
- * return the matching image path or null.
+ * Read the tracked attribute path from a token document's flags.
+ * Returns the path relative to actor.system (e.g. "resources.hitPoints").
+ */
+function getAttribute(tokenDoc) {
+  return tokenDoc.getFlag(MODULE_ID, "attribute") ?? null;
+}
+
+/**
+ * Given an HP percentage (0-100) and thresholds, return the matching image path.
+ * Sorts ascending — the first entry where hpPercent <= threshold is the tightest match.
  */
 function resolveImage(hpPercent, thresholds) {
   if (!thresholds?.length) return null;
-  // Sort descending by threshold value (in case stored unsorted)
-  const sorted = [...thresholds].sort((a, b) => b.threshold - a.threshold);
+  const sorted = [...thresholds].sort((a, b) => a.threshold - b.threshold);
   for (const entry of sorted) {
     if (hpPercent <= entry.threshold) {
       return entry.img;
     }
   }
-  // HP% is above all thresholds — shouldn't normally happen if 100 is present,
-  // but fall back to the highest threshold's image.
-  return sorted[0]?.img ?? null;
+  return null;
 }
-
-/* ---------------------------------------- */
-/*  Init — register settings                 */
-/* ---------------------------------------- */
-
-Hooks.once("init", () => {
-  game.settings.register(MODULE_ID, "hpPath", {
-    name: "HP Attribute Path",
-    hint: 'The dot-path on the actor where HP lives. The module reads .value and .max from this path. Example for Daggerheart: system.resources.hitPoints. Example for D&D 5e: system.attributes.hp.',
-    scope: "world",
-    config: true,
-    type: String,
-    default: "system.resources.hitPoints",
-  });
-});
 
 /* ---------------------------------------- */
 /*  Render TokenConfig — inject into         */
 /*  appearance tab as a fieldset             */
 /* ---------------------------------------- */
 
-/**
- * Shared handler for injecting the Dynamic Tokens fieldset into the appearance tab.
- */
 async function onRenderTokenConfig(app, element) {
   const tokenDoc = app.document ?? app.token;
   if (!tokenDoc) return;
@@ -68,14 +54,14 @@ async function onRenderTokenConfig(app, element) {
   // Avoid duplicate injection on re-render
   if (element.querySelector(".dynamic-tokens-fieldset")) return;
 
-  // Find the appearance tab content panel (not the nav link)
+  // Find the appearance tab content panel
   const appearanceTab = element.querySelector('div.tab[data-tab="appearance"]');
   if (!appearanceTab) return;
 
   // Load the handlebars template
   const templatePath = `modules/${MODULE_ID}/templates/token-config-tab.hbs`;
   const thresholds = getThresholds(tokenDoc) ?? [];
-  const html = await renderTemplate(templatePath, { thresholds });
+  const html = await foundry.applications.handlebars.renderTemplate(templatePath, { thresholds });
 
   // Create a fieldset matching Foundry's native styling
   const fieldset = document.createElement("fieldset");
@@ -87,6 +73,19 @@ async function onRenderTokenConfig(app, element) {
   const container = document.createElement("div");
   container.innerHTML = html;
   fieldset.appendChild(container);
+
+  // Populate the attribute dropdown by cloning options from the bar1 selector
+  const dtSelect = fieldset.querySelector(".dt-attribute");
+  const barSelect = element.querySelector('select[name="bar1.attribute"]');
+  if (dtSelect && barSelect) {
+    // Clone all optgroups and options from Foundry's bar attribute selector
+    for (const child of barSelect.children) {
+      dtSelect.appendChild(child.cloneNode(true));
+    }
+    // Set current value from flags
+    const savedAttr = getAttribute(tokenDoc) ?? DEFAULT_ATTRIBUTE;
+    dtSelect.value = savedAttr;
+  }
 
   // Append at the bottom of the appearance tab
   appearanceTab.appendChild(fieldset);
@@ -103,6 +102,11 @@ Hooks.on("renderPrototypeTokenConfig", (app, element, context, options) => onRen
  * Attach interactive listeners to the dynamic-tokens fieldset.
  */
 function activateListeners(fieldset, tokenDoc) {
+  // Attribute selector — save on change
+  fieldset.querySelector(".dt-attribute")?.addEventListener("change", (e) => {
+    tokenDoc.setFlag(MODULE_ID, "attribute", e.target.value);
+  });
+
   // "Add Threshold" button
   fieldset.querySelector(".dt-add-threshold")?.addEventListener("click", () => {
     const container = fieldset.querySelector(".dynamic-tokens-thresholds");
@@ -133,7 +137,7 @@ function activateListeners(fieldset, tokenDoc) {
     activateRowListeners(row, fieldset, tokenDoc);
   });
 
-  // Auto-save on any input change (threshold value or image path)
+  // Auto-save thresholds on any input change
   fieldset.addEventListener("change", () => saveThresholds(fieldset, tokenDoc));
 }
 
@@ -141,7 +145,6 @@ function activateListeners(fieldset, tokenDoc) {
  * Wire up per-row buttons (file picker, delete).
  */
 function activateRowListeners(row, fieldset, tokenDoc) {
-  // File picker button
   row.querySelector(".dt-file-picker")?.addEventListener("click", () => {
     const imgInput = row.querySelector(".dt-img");
     new FilePicker({
@@ -154,7 +157,6 @@ function activateRowListeners(row, fieldset, tokenDoc) {
     }).browse();
   });
 
-  // Delete button
   row.querySelector(".dt-remove")?.addEventListener("click", () => {
     row.remove();
     saveThresholds(fieldset, tokenDoc);
@@ -185,29 +187,32 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
   // Only run on the triggering user's client to avoid duplicate updates
   if (game.user.id !== userId) return;
 
-  const hpPath = game.settings.get(MODULE_ID, "hpPath");
-
-  // Check if the HP value actually changed in this update
-  const changePath = hpPath + ".value";
-  const changedValue = foundry.utils.getProperty(changes, changePath);
-  if (changedValue === undefined) return;
-
-  // Read current HP from the actor
-  const hpData = resolvePath(actor, hpPath);
-  if (!hpData || hpData.max == null || hpData.max === 0) return;
-
-  const hpPercent = (hpData.value / hpData.max) * 100;
-
   // Process all active tokens for this actor on the current scene
-  const tokens = actor.getActiveTokens(false, true); // linked=false (all tokens), document=true (return TokenDocuments)
+  const tokens = actor.getActiveTokens(false, true);
   for (const tokenDoc of tokens) {
+    const attrPath = getAttribute(tokenDoc);
+    if (!attrPath) continue;
+
     const thresholds = getThresholds(tokenDoc);
     if (!thresholds?.length) continue;
+
+    // Check if this attribute changed in this update
+    const changePath = "system." + attrPath + ".value";
+    const changedValue = foundry.utils.getProperty(changes, changePath);
+    if (changedValue === undefined) continue;
+
+    // Read current attribute data from the actor
+    const attrData = resolvePath(actor, "system." + attrPath);
+    if (!attrData || attrData.max == null || attrData.max === 0) continue;
+
+    // If isReversed (e.g. Daggerheart), value counts damage taken: 0 = full, max = dead
+    const hpPercent = attrData.isReversed
+      ? ((1 - attrData.value / attrData.max) * 100)
+      : ((attrData.value / attrData.max) * 100);
 
     const newImg = resolveImage(hpPercent, thresholds);
     if (!newImg) continue;
 
-    // Only update if the image actually differs
     if (tokenDoc.texture?.src !== newImg) {
       await tokenDoc.update({ "texture.src": newImg });
     }
