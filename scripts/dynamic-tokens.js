@@ -68,8 +68,8 @@ async function onRenderTokenConfig(app, element) {
   // Avoid duplicate injection on re-render
   if (element.querySelector(".dynamic-tokens-fieldset")) return;
 
-  // Find the appearance tab
-  const appearanceTab = element.querySelector('[data-tab="appearance"]');
+  // Find the appearance tab content panel (not the nav link)
+  const appearanceTab = element.querySelector('div.tab[data-tab="appearance"]');
   if (!appearanceTab) return;
 
   // Load the handlebars template
