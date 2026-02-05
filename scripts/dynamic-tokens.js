@@ -42,6 +42,33 @@ function resolveImage(hpPercent, thresholds) {
   return null;
 }
 
+/**
+ * Determine whether an update payload touches a tracked attribute path.
+ */
+function didAttributeChange(changes, attrPath) {
+  const basePath = `system.${attrPath}`;
+  const valuePath = `${basePath}.value`;
+  const currentPath = `${basePath}.current`;
+  return (
+    foundry.utils.hasProperty(changes, basePath) ||
+    foundry.utils.hasProperty(changes, valuePath) ||
+    foundry.utils.hasProperty(changes, currentPath)
+  );
+}
+
+/**
+ * Normalize an attribute object into { value, max, isReversed }.
+ */
+function normalizeAttribute(attrData) {
+  if (attrData == null) return null;
+  if (typeof attrData !== "object") return null;
+  const value = attrData.value ?? attrData.current;
+  const max = attrData.max ?? attrData.maximum;
+  const isReversed = attrData.isReversed ?? attrData.reversed ?? false;
+  if (value == null || max == null) return null;
+  return { value, max, isReversed };
+}
+
 /* ---------------------------------------- */
 /*  Render TokenConfig — inject into         */
 /*  appearance tab as a fieldset             */
@@ -197,13 +224,11 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
     if (!thresholds?.length) continue;
 
     // Check if this attribute changed in this update
-    const changePath = "system." + attrPath + ".value";
-    const changedValue = foundry.utils.getProperty(changes, changePath);
-    if (changedValue === undefined) continue;
+    if (!didAttributeChange(changes, attrPath)) continue;
 
     // Read current attribute data from the actor
-    const attrData = resolvePath(actor, "system." + attrPath);
-    if (!attrData || attrData.max == null || attrData.max === 0) continue;
+    const attrData = normalizeAttribute(resolvePath(actor, "system." + attrPath));
+    if (!attrData || !attrData.max || attrData.max === 0) continue;
 
     // If isReversed (e.g. Daggerheart), value counts damage taken: 0 = full, max = dead
     const hpPercent = attrData.isReversed
