@@ -24,3 +24,18 @@
 .dynamic-tokens-fieldset .threshold-row .dt-remove {
   flex: 0 0 auto;
 }
+
+.dynamic-tokens-fieldset .threshold-row .dt-thumb {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  border: 1px solid var(--color-border-light-tertiary, #999);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* No image set yet: show an empty placeholder box instead of a broken icon */
+.dynamic-tokens-fieldset .threshold-row .dt-thumb.empty {
+  visibility: hidden;
+}

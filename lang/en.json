@@ -1,0 +1,11 @@
+{
+  "DYNAMIC_TOKENS.Legend": "Dynamic Token Images",
+  "DYNAMIC_TOKENS.TrackedAttribute": "Tracked Attribute",
+  "DYNAMIC_TOKENS.TrackedAttributeHint": "The attribute used to calculate HP percentage for image swapping.",
+  "DYNAMIC_TOKENS.None": "None",
+  "DYNAMIC_TOKENS.HpAtMost": "HP ≤",
+  "DYNAMIC_TOKENS.ImagePlaceholder": "path/to/image.png",
+  "DYNAMIC_TOKENS.BrowseFiles": "Browse Files",
+  "DYNAMIC_TOKENS.RemoveThreshold": "Remove Threshold",
+  "DYNAMIC_TOKENS.AddThreshold": "Add Threshold"
+}

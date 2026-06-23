@@ -1,25 +1,26 @@
 <div class="form-group">
-  <label>Tracked Attribute</label>
+  <label>{{localize "DYNAMIC_TOKENS.TrackedAttribute"}}</label>
   <div class="form-fields">
     <select class="dt-attribute">
-      <option value="">None</option>
+      <option value="">{{localize "DYNAMIC_TOKENS.None"}}</option>
     </select>
   </div>
-  <p class="hint">The attribute used to calculate HP percentage for image swapping.</p>
+  <p class="hint">{{localize "DYNAMIC_TOKENS.TrackedAttributeHint"}}</p>
 </div>
 
 <div class="dynamic-tokens-thresholds">
   {{#each thresholds}}
   <div class="threshold-row" data-index="{{@index}}">
     <div class="form-fields">
-      <label>HP &le;</label>
+      <label>{{localize "DYNAMIC_TOKENS.HpAtMost"}}</label>
       <input type="number" class="dt-threshold" value="{{this.threshold}}" min="0" max="100" step="1" placeholder="%" />
       <span>%</span>
-      <input type="text" class="dt-img" value="{{this.img}}" placeholder="path/to/image.png" />
-      <button type="button" class="dt-file-picker" title="Browse Files">
+      <img class="dt-thumb{{#unless this.img}} empty{{/unless}}" src="{{this.img}}" alt="" />
+      <input type="text" class="dt-img" value="{{this.img}}" placeholder="{{localize "DYNAMIC_TOKENS.ImagePlaceholder"}}" />
+      <button type="button" class="dt-file-picker" title="{{localize "DYNAMIC_TOKENS.BrowseFiles"}}">
         <i class="fa-solid fa-file-import"></i>
       </button>
-      <button type="button" class="dt-remove" title="Remove Threshold">
+      <button type="button" class="dt-remove" title="{{localize "DYNAMIC_TOKENS.RemoveThreshold"}}">
         <i class="fa-solid fa-trash"></i>
       </button>
     </div>
@@ -27,5 +28,5 @@
   {{/each}}
 </div>
 <button type="button" class="dt-add-threshold">
-  <i class="fa-solid fa-plus"></i> Add Threshold
+  <i class="fa-solid fa-plus"></i> {{localize "DYNAMIC_TOKENS.AddThreshold"}}
 </button>

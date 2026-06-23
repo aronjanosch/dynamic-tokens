@@ -28,6 +28,15 @@ function getAttribute(tokenDoc) {
 }
 
 /**
+ * Resolve the FilePicker class across Foundry versions.
+ * The global `FilePicker` was deprecated in v13 and removed in v14;
+ * the namespaced implementation is the forward-compatible reference.
+ */
+function getFilePicker() {
+  return foundry.applications?.apps?.FilePicker?.implementation ?? FilePicker;
+}
+
+/**
  * Given an HP percentage (0-100) and thresholds, return the matching image path.
  * Sorts ascending — the first entry where hpPercent <= threshold is the tightest match.
  */
@@ -69,6 +78,36 @@ function normalizeAttribute(attrData) {
   return { value, max, isReversed };
 }
 
+/**
+ * Compute the matching image for a token from its actor's current attribute,
+ * and swap the texture if it differs. Idempotent — safe to call repeatedly.
+ */
+async function refreshToken(tokenDoc) {
+  const attrPath = getAttribute(tokenDoc);
+  if (!attrPath) return;
+
+  const thresholds = getThresholds(tokenDoc);
+  if (!thresholds?.length) return;
+
+  const actor = tokenDoc.actor;
+  if (!actor) return;
+
+  const attrData = normalizeAttribute(resolvePath(actor, "system." + attrPath));
+  if (!attrData || !attrData.max || attrData.max === 0) return;
+
+  // If isReversed (e.g. Daggerheart), value counts damage taken: 0 = full, max = dead
+  const hpPercent = attrData.isReversed
+    ? (1 - attrData.value / attrData.max) * 100
+    : (attrData.value / attrData.max) * 100;
+
+  const newImg = resolveImage(hpPercent, thresholds);
+  if (!newImg) return;
+
+  if (tokenDoc.texture?.src !== newImg) {
+    await tokenDoc.update({ "texture.src": newImg });
+  }
+}
+
 /* ---------------------------------------- */
 /*  Render TokenConfig — inject into         */
 /*  appearance tab as a fieldset             */
@@ -94,7 +133,7 @@ async function onRenderTokenConfig(app, element) {
   const fieldset = document.createElement("fieldset");
   fieldset.classList.add("dynamic-tokens-fieldset");
   const legend = document.createElement("legend");
-  legend.textContent = "Dynamic Token Images";
+  legend.textContent = game.i18n.localize("DYNAMIC_TOKENS.Legend");
   fieldset.appendChild(legend);
 
   const container = document.createElement("div");
@@ -122,16 +161,17 @@ async function onRenderTokenConfig(app, element) {
 }
 
 // Hook into both placed-token config and prototype-token config
-Hooks.on("renderTokenConfig", (app, element, context, options) => onRenderTokenConfig(app, element));
-Hooks.on("renderPrototypeTokenConfig", (app, element, context, options) => onRenderTokenConfig(app, element));
+Hooks.on("renderTokenConfig", (app, element) => onRenderTokenConfig(app, element));
+Hooks.on("renderPrototypeTokenConfig", (app, element) => onRenderTokenConfig(app, element));
 
 /**
  * Attach interactive listeners to the dynamic-tokens fieldset.
  */
 function activateListeners(fieldset, tokenDoc) {
-  // Attribute selector — save on change
-  fieldset.querySelector(".dt-attribute")?.addEventListener("change", (e) => {
-    tokenDoc.setFlag(MODULE_ID, "attribute", e.target.value);
+  // Attribute selector — save on change, then refresh image immediately
+  fieldset.querySelector(".dt-attribute")?.addEventListener("change", async (e) => {
+    await tokenDoc.setFlag(MODULE_ID, "attribute", e.target.value);
+    refreshToken(tokenDoc);
   });
 
   // "Add Threshold" button
@@ -143,14 +183,15 @@ function activateListeners(fieldset, tokenDoc) {
     row.dataset.index = index;
     row.innerHTML = `
       <div class="form-fields">
-        <label>HP &le;</label>
+        <label>${game.i18n.localize("DYNAMIC_TOKENS.HpAtMost")}</label>
         <input type="number" class="dt-threshold" value="100" min="0" max="100" step="1" placeholder="%" />
         <span>%</span>
-        <input type="text" class="dt-img" value="" placeholder="path/to/image.png" />
-        <button type="button" class="dt-file-picker" title="Browse Files">
+        <img class="dt-thumb empty" src="" alt="" />
+        <input type="text" class="dt-img" value="" placeholder="${game.i18n.localize("DYNAMIC_TOKENS.ImagePlaceholder")}" />
+        <button type="button" class="dt-file-picker" title="${game.i18n.localize("DYNAMIC_TOKENS.BrowseFiles")}">
           <i class="fa-solid fa-file-import"></i>
         </button>
-        <button type="button" class="dt-remove" title="Remove Threshold">
+        <button type="button" class="dt-remove" title="${game.i18n.localize("DYNAMIC_TOKENS.RemoveThreshold")}">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
@@ -164,21 +205,31 @@ function activateListeners(fieldset, tokenDoc) {
     activateRowListeners(row, fieldset, tokenDoc);
   });
 
-  // Auto-save thresholds on any input change
-  fieldset.addEventListener("change", () => saveThresholds(fieldset, tokenDoc));
+  // Auto-save thresholds on any threshold input change (the attribute select
+  // manages its own flag, so ignore changes that bubble from it)
+  fieldset.addEventListener("change", (e) => {
+    if (e.target.classList?.contains("dt-attribute")) return;
+    saveThresholds(fieldset, tokenDoc);
+  });
 }
 
 /**
  * Wire up per-row buttons (file picker, delete).
  */
 function activateRowListeners(row, fieldset, tokenDoc) {
+  const imgInput = row.querySelector(".dt-img");
+
+  // Keep the preview thumbnail in sync with the path field
+  imgInput?.addEventListener("input", () => updateThumb(row));
+
   row.querySelector(".dt-file-picker")?.addEventListener("click", () => {
-    const imgInput = row.querySelector(".dt-img");
-    new FilePicker({
+    const FP = getFilePicker();
+    new FP({
       type: "image",
       current: imgInput.value,
       callback: (path) => {
         imgInput.value = path;
+        updateThumb(row);
         saveThresholds(fieldset, tokenDoc);
       },
     }).browse();
@@ -188,6 +239,17 @@ function activateRowListeners(row, fieldset, tokenDoc) {
     row.remove();
     saveThresholds(fieldset, tokenDoc);
   });
+}
+
+/**
+ * Refresh a row's preview thumbnail from its path field.
+ */
+function updateThumb(row) {
+  const thumb = row.querySelector(".dt-thumb");
+  const path = row.querySelector(".dt-img")?.value?.trim() ?? "";
+  if (!thumb) return;
+  thumb.src = path;
+  thumb.classList.toggle("empty", !path);
 }
 
 /**
@@ -204,10 +266,12 @@ async function saveThresholds(fieldset, tokenDoc) {
     }
   });
   await tokenDoc.setFlag(MODULE_ID, "thresholds", thresholds);
+  // Apply the new configuration immediately so the GM sees the effect
+  refreshToken(tokenDoc);
 }
 
 /* ---------------------------------------- */
-/*  Update Actor — react to HP changes       */
+/*  React to HP changes & scene load         */
 /* ---------------------------------------- */
 
 Hooks.on("updateActor", async (actor, changes, options, userId) => {
@@ -219,27 +283,23 @@ Hooks.on("updateActor", async (actor, changes, options, userId) => {
   for (const tokenDoc of tokens) {
     const attrPath = getAttribute(tokenDoc);
     if (!attrPath) continue;
-
-    const thresholds = getThresholds(tokenDoc);
-    if (!thresholds?.length) continue;
-
-    // Check if this attribute changed in this update
+    // Skip work unless this update touched the tracked attribute
     if (!didAttributeChange(changes, attrPath)) continue;
+    await refreshToken(tokenDoc);
+  }
+});
 
-    // Read current attribute data from the actor
-    const attrData = normalizeAttribute(resolvePath(actor, "system." + attrPath));
-    if (!attrData || !attrData.max || attrData.max === 0) continue;
+// Sync a token's image to current HP when it is placed on the scene.
+Hooks.on("createToken", async (tokenDoc, options, userId) => {
+  if (game.user.id !== userId) return;
+  await refreshToken(tokenDoc);
+});
 
-    // If isReversed (e.g. Daggerheart), value counts damage taken: 0 = full, max = dead
-    const hpPercent = attrData.isReversed
-      ? ((1 - attrData.value / attrData.max) * 100)
-      : ((attrData.value / attrData.max) * 100);
-
-    const newImg = resolveImage(hpPercent, thresholds);
-    if (!newImg) continue;
-
-    if (tokenDoc.texture?.src !== newImg) {
-      await tokenDoc.update({ "texture.src": newImg });
-    }
+// Sync every token's image to current HP when a scene is rendered.
+Hooks.on("canvasReady", async (canvas) => {
+  // Let the active GM own the canonical update to avoid duplicate writes
+  if (!game.users.activeGM || game.user.id !== game.users.activeGM.id) return;
+  for (const token of canvas.tokens?.placeables ?? []) {
+    await refreshToken(token.document);
   }
 });

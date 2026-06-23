@@ -2,10 +2,11 @@
   "id": "dynamic-tokens",
   "title": "Dynamic Tokens",
   "description": "Automatically swap token images based on HP thresholds. System-agnostic — configure which attribute path represents HP.",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "authors": [
     {
-      "name": "Aron"
+      "name": "Aron",
+      "url": "https://github.com/aronjanosch"
     }
   ],
   "compatibility": {
@@ -18,6 +19,17 @@
   "styles": [
     "styles/dynamic-tokens.css"
   ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/aronjanosch/dynamic-tokens",
+  "readme": "https://github.com/aronjanosch/dynamic-tokens/blob/main/README.md",
+  "bugs": "https://github.com/aronjanosch/dynamic-tokens/issues",
+  "license": "MIT",
   "manifest": "https://github.com/aronjanosch/dynamic-tokens/releases/latest/download/module.json",
-  "download": "https://github.com/aronjanosch/dynamic-tokens/releases/download/v1.0.4/dynamic-tokens.zip"
+  "download": "https://github.com/aronjanosch/dynamic-tokens/releases/download/v1.1.0/dynamic-tokens.zip"
 }
