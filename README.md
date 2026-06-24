@@ -8,6 +8,10 @@ macros, no per-system setup.
 It is **system-agnostic**: you choose which attribute represents HP, so it works
 in dnd5e, Pathfinder, Daggerheart, and homebrew systems alike.
 
+## Screenshot
+
+![Dynamic Token Images config in the Token Config Appearance tab](docs/images/token-config.png)
+
 ## Features
 
 - 🩸 **Threshold-based image swapping** — e.g. show a bloodied portrait at ≤ 50% HP
