@@ -13,10 +13,13 @@ function resolvePath(obj, path) {
 }
 
 /**
- * Read thresholds from a token document's flags.
+ * Read thresholds from a token document's flags. Guards against malformed
+ * non-array data (e.g. from a pre-pools schema or manual edits) crashing
+ * every downstream .map()/.filter() call.
  */
 function getThresholds(tokenDoc) {
-  return tokenDoc.getFlag(MODULE_ID, "thresholds") ?? null;
+  const value = tokenDoc.getFlag(MODULE_ID, "thresholds");
+  return Array.isArray(value) ? value : null;
 }
 
 /**
@@ -24,7 +27,8 @@ function getThresholds(tokenDoc) {
  * Array of { status, img }, checked in order — first active match wins.
  */
 function getStatusOverrides(tokenDoc) {
-  return tokenDoc.getFlag(MODULE_ID, "statusOverrides") ?? null;
+  const value = tokenDoc.getFlag(MODULE_ID, "statusOverrides");
+  return Array.isArray(value) ? value : null;
 }
 
 /**
