@@ -298,8 +298,7 @@ function activateListeners(fieldset, tokenDoc) {
     row.dataset.index = index;
     row.innerHTML = `
       <div class="form-fields">
-        <label>${game.i18n.localize("DYNAMIC_TOKENS.HpAtMost")}</label>
-        <input type="number" class="dt-threshold" value="100" min="0" max="100" step="1" placeholder="%" />
+        <input type="number" class="dt-threshold" aria-label="${game.i18n.localize("DYNAMIC_TOKENS.HpAtMost")}" value="100" min="0" max="100" step="1" placeholder="%" />
         <span>%</span>
         <img class="dt-thumb empty" src="" alt="" />
         <input type="text" class="dt-img" value="" placeholder="${game.i18n.localize("DYNAMIC_TOKENS.ImagePlaceholder")}" />

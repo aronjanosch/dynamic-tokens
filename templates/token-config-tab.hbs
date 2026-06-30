@@ -18,12 +18,12 @@
   <p class="hint">{{localize "DYNAMIC_TOKENS.PreviewHpHint"}}</p>
 </div>
 
+<p class="hint">{{localize "DYNAMIC_TOKENS.ThresholdsHint"}}</p>
 <div class="dynamic-tokens-thresholds">
   {{#each thresholds}}
   <div class="threshold-row" data-index="{{@index}}">
     <div class="form-fields">
-      <label>{{localize "DYNAMIC_TOKENS.HpAtMost"}}</label>
-      <input type="number" class="dt-threshold" value="{{this.threshold}}" min="0" max="100" step="1" placeholder="%" />
+      <input type="number" class="dt-threshold" aria-label="{{localize "DYNAMIC_TOKENS.HpAtMost"}}" value="{{this.threshold}}" min="0" max="100" step="1" placeholder="%" />
       <span>%</span>
       <img class="dt-thumb{{#unless this.img}} empty{{/unless}}" src="{{this.img}}" alt="" />
       <input type="text" class="dt-img" value="{{this.img}}" placeholder="{{localize "DYNAMIC_TOKENS.ImagePlaceholder"}}" />

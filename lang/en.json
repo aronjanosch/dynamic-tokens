@@ -6,6 +6,7 @@
   "DYNAMIC_TOKENS.PreviewHp": "Preview HP%",
   "DYNAMIC_TOKENS.PreviewHpHint": "Scrub a hypothetical HP% to preview which image would resolve and which threshold is active. Starts at the token's current HP%; doesn't change actor data.",
   "DYNAMIC_TOKENS.HpAtMost": "HP ≤",
+  "DYNAMIC_TOKENS.ThresholdsHint": "Each row sets the image to use once HP drops to at most that percent (the tightest matching row wins).",
   "DYNAMIC_TOKENS.ImagePlaceholder": "path/to/image.png",
   "DYNAMIC_TOKENS.BrowseFiles": "Browse Files",
   "DYNAMIC_TOKENS.RemoveThreshold": "Remove Threshold",
