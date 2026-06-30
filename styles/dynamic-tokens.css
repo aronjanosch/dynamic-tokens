@@ -41,7 +41,7 @@
 }
 
 /* Image path set but failed to load */
-.dynamic-tokens-fieldset .dt-thumb.broken {
+.dt-thumb.broken {
   border-color: #c33;
   box-shadow: 0 0 0 1px #c33;
 }
@@ -72,4 +72,71 @@
 .dynamic-tokens-fieldset .dynamic-tokens-details > summary {
   cursor: pointer;
   font-weight: bold;
+}
+
+.dynamic-tokens-fieldset button.dt-advanced-open {
+  margin-top: 0.5rem;
+}
+
+/* ---------------------------------------- */
+/*  Advanced window                          */
+/* ---------------------------------------- */
+
+.dynamic-tokens-advanced .dt-advanced-section {
+  margin-bottom: 1rem;
+}
+
+.dynamic-tokens-advanced .dt-status-overrides,
+.dynamic-tokens-advanced .dt-pool-images {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.dynamic-tokens-advanced .dt-pool-group {
+  margin-bottom: 0.75rem;
+}
+
+.dynamic-tokens-advanced .dt-pool-group h4 {
+  margin: 0 0 0.25rem;
+}
+
+.dynamic-tokens-advanced .form-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dynamic-tokens-advanced .dt-status-select {
+  flex: 0 0 auto;
+  width: 10rem;
+}
+
+.dynamic-tokens-advanced .dt-img {
+  flex: 1 1 auto;
+}
+
+.dynamic-tokens-advanced .dt-weight {
+  width: 3.5rem;
+  text-align: center;
+}
+
+.dynamic-tokens-advanced .dt-file-picker,
+.dynamic-tokens-advanced .dt-remove {
+  flex: 0 0 auto;
+}
+
+.dynamic-tokens-advanced .dt-thumb {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  border: 1px solid var(--color-border-light-tertiary, #999);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dynamic-tokens-advanced .dt-thumb.empty {
+  visibility: hidden;
 }

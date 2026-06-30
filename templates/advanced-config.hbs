@@ -1,0 +1,58 @@
+<section class="dt-advanced-section">
+  <h3>{{localize "DYNAMIC_TOKENS.StatusOverrides"}}</h3>
+  <p class="hint">{{localize "DYNAMIC_TOKENS.StatusOverridesHint"}}</p>
+  <div class="dt-status-overrides">
+    {{#each statusOverrides}}
+    <div class="dt-status-row" data-index="{{@index}}" data-status="{{this.status}}">
+      <div class="form-fields">
+        <select class="dt-status-select"></select>
+        <img class="dt-thumb{{#unless this.img}} empty{{/unless}}" src="{{this.img}}" alt="" />
+        <input type="text" class="dt-img" value="{{this.img}}" placeholder="{{localize "DYNAMIC_TOKENS.ImagePlaceholder"}}" />
+        <button type="button" class="dt-file-picker" title="{{localize "DYNAMIC_TOKENS.BrowseFiles"}}">
+          <i class="fa-solid fa-file-import"></i>
+        </button>
+        <button type="button" class="dt-remove" title="{{localize "DYNAMIC_TOKENS.RemoveStatusOverride"}}">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+  <button type="button" class="dt-add-status-override">
+    <i class="fa-solid fa-plus"></i> {{localize "DYNAMIC_TOKENS.AddStatusOverride"}}
+  </button>
+</section>
+
+<section class="dt-advanced-section">
+  <h3>{{localize "DYNAMIC_TOKENS.ImagePools"}}</h3>
+  <p class="hint">{{localize "DYNAMIC_TOKENS.ImagePoolsHint"}}</p>
+  {{#each thresholds}}
+  <div class="dt-pool-group" data-index="{{@index}}">
+    <h4>{{localize "DYNAMIC_TOKENS.HpAtMost"}} {{this.threshold}}%</h4>
+    <div class="dt-pool-images">
+      {{#each this.images}}
+      <div class="dt-pool-row" data-pool-index="{{@index}}">
+        <div class="form-fields">
+          <img class="dt-thumb{{#unless this.img}} empty{{/unless}}" src="{{this.img}}" alt="" />
+          <input type="text" class="dt-img" value="{{this.img}}" placeholder="{{localize "DYNAMIC_TOKENS.ImagePlaceholder"}}" />
+          <button type="button" class="dt-file-picker" title="{{localize "DYNAMIC_TOKENS.BrowseFiles"}}">
+            <i class="fa-solid fa-file-import"></i>
+          </button>
+          <label>{{localize "DYNAMIC_TOKENS.Weight"}}</label>
+          <input type="number" class="dt-weight" value="{{this.weight}}" min="1" step="1" />
+          <button type="button" class="dt-remove" {{#if @first}}disabled{{/if}} title="{{localize "DYNAMIC_TOKENS.RemovePoolImage"}}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    <button type="button" class="dt-add-pool-image">
+      <i class="fa-solid fa-plus"></i> {{localize "DYNAMIC_TOKENS.AddPoolImage"}}
+    </button>
+  </div>
+  {{/each}}
+  {{#unless thresholds.length}}
+  <p class="hint">{{localize "DYNAMIC_TOKENS.NoThresholds"}}</p>
+  {{/unless}}
+</section>
