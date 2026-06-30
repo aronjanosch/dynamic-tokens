@@ -39,3 +39,37 @@
 .dynamic-tokens-fieldset .threshold-row .dt-thumb.empty {
   visibility: hidden;
 }
+
+/* Image path set but failed to load */
+.dynamic-tokens-fieldset .dt-thumb.broken {
+  border-color: #c33;
+  box-shadow: 0 0 0 1px #c33;
+}
+
+/* The threshold row matching the current preview HP% */
+.dynamic-tokens-fieldset .threshold-row.dt-active-row {
+  background: rgba(255, 200, 0, 0.15);
+  border-radius: 3px;
+  outline: 1px solid rgba(255, 200, 0, 0.6);
+}
+
+.dynamic-tokens-fieldset .dt-preview-group .form-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dynamic-tokens-fieldset .dt-preview-slider {
+  flex: 1 1 auto;
+}
+
+.dynamic-tokens-fieldset .dt-preview-value {
+  flex: 0 0 auto;
+  width: 3rem;
+  text-align: right;
+}
+
+.dynamic-tokens-fieldset .dynamic-tokens-details > summary {
+  cursor: pointer;
+  font-weight: bold;
+}

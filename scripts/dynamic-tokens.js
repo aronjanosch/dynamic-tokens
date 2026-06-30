@@ -79,26 +79,35 @@ function normalizeAttribute(attrData) {
 }
 
 /**
+ * Compute a token's current HP percentage from its actor via the tracked
+ * attribute. Returns null if untracked, unlinked, or max is 0.
+ */
+function computeHpPercent(tokenDoc) {
+  const attrPath = getAttribute(tokenDoc);
+  if (!attrPath) return null;
+
+  const actor = tokenDoc.actor;
+  if (!actor) return null;
+
+  const attrData = normalizeAttribute(resolvePath(actor, "system." + attrPath));
+  if (!attrData || !attrData.max) return null;
+
+  // If isReversed (e.g. Daggerheart), value counts damage taken: 0 = full, max = dead
+  return attrData.isReversed
+    ? (1 - attrData.value / attrData.max) * 100
+    : (attrData.value / attrData.max) * 100;
+}
+
+/**
  * Compute the matching image for a token from its actor's current attribute,
  * and swap the texture if it differs. Idempotent — safe to call repeatedly.
  */
 async function refreshToken(tokenDoc) {
-  const attrPath = getAttribute(tokenDoc);
-  if (!attrPath) return;
-
   const thresholds = getThresholds(tokenDoc);
   if (!thresholds?.length) return;
 
-  const actor = tokenDoc.actor;
-  if (!actor) return;
-
-  const attrData = normalizeAttribute(resolvePath(actor, "system." + attrPath));
-  if (!attrData || !attrData.max || attrData.max === 0) return;
-
-  // If isReversed (e.g. Daggerheart), value counts damage taken: 0 = full, max = dead
-  const hpPercent = attrData.isReversed
-    ? (1 - attrData.value / attrData.max) * 100
-    : (attrData.value / attrData.max) * 100;
+  const hpPercent = computeHpPercent(tokenDoc);
+  if (hpPercent == null) return;
 
   const newImg = resolveImage(hpPercent, thresholds);
   if (!newImg) return;
@@ -127,18 +136,31 @@ async function onRenderTokenConfig(app, element) {
   // Load the handlebars template
   const templatePath = `modules/${MODULE_ID}/templates/token-config-tab.hbs`;
   const thresholds = getThresholds(tokenDoc) ?? [];
-  const html = await foundry.applications.handlebars.renderTemplate(templatePath, { thresholds });
+  // Default the preview slider to the token's actual current HP%, so the
+  // fieldset opens already showing which threshold band is live.
+  const currentPercent = computeHpPercent(tokenDoc);
+  const previewPercent = currentPercent != null ? Math.round(currentPercent) : 100;
+  const html = await foundry.applications.handlebars.renderTemplate(templatePath, {
+    thresholds,
+    previewPercent,
+  });
 
-  // Create a fieldset matching Foundry's native styling
+  // Create a fieldset matching Foundry's native styling, with a collapsible
+  // <details> body so the section can shrink once it grows (random pools etc).
   const fieldset = document.createElement("fieldset");
   fieldset.classList.add("dynamic-tokens-fieldset");
-  const legend = document.createElement("legend");
-  legend.textContent = game.i18n.localize("DYNAMIC_TOKENS.Legend");
-  fieldset.appendChild(legend);
+
+  const details = document.createElement("details");
+  details.classList.add("dynamic-tokens-details");
+  details.open = true;
+  const summary = document.createElement("summary");
+  summary.textContent = game.i18n.localize("DYNAMIC_TOKENS.Legend");
+  details.appendChild(summary);
 
   const container = document.createElement("div");
   container.innerHTML = html;
-  fieldset.appendChild(container);
+  details.appendChild(container);
+  fieldset.appendChild(details);
 
   // Populate the attribute dropdown by cloning options from the bar1 selector
   const dtSelect = fieldset.querySelector(".dt-attribute");
@@ -158,6 +180,7 @@ async function onRenderTokenConfig(app, element) {
 
   // Wire up event listeners
   activateListeners(fieldset, tokenDoc);
+  updatePreview(fieldset, previewPercent);
 }
 
 // Hook into both placed-token config and prototype-token config
@@ -173,6 +196,11 @@ function activateListeners(fieldset, tokenDoc) {
     await tokenDoc.setFlag(MODULE_ID, "attribute", e.target.value);
     refreshToken(tokenDoc);
   });
+
+  // Live preview slider — scrub a hypothetical HP% without touching actor HP
+  const slider = fieldset.querySelector(".dt-preview-slider");
+  slider?.addEventListener("input", () => updatePreview(fieldset, Number(slider.value)));
+  wireThumbErrorHandling(fieldset.querySelector(".dt-preview-thumb"));
 
   // "Add Threshold" button
   fieldset.querySelector(".dt-add-threshold")?.addEventListener("click", () => {
@@ -198,6 +226,7 @@ function activateListeners(fieldset, tokenDoc) {
     `;
     container.appendChild(row);
     activateRowListeners(row, fieldset, tokenDoc);
+    refreshPreview(fieldset);
   });
 
   // Existing rows
@@ -206,10 +235,12 @@ function activateListeners(fieldset, tokenDoc) {
   });
 
   // Auto-save thresholds on any threshold input change (the attribute select
-  // manages its own flag, so ignore changes that bubble from it)
+  // and preview slider manage their own state, so ignore changes from them)
   fieldset.addEventListener("change", (e) => {
     if (e.target.classList?.contains("dt-attribute")) return;
+    if (e.target.classList?.contains("dt-preview-slider")) return;
     saveThresholds(fieldset, tokenDoc);
+    refreshPreview(fieldset);
   });
 }
 
@@ -218,9 +249,13 @@ function activateListeners(fieldset, tokenDoc) {
  */
 function activateRowListeners(row, fieldset, tokenDoc) {
   const imgInput = row.querySelector(".dt-img");
+  wireThumbErrorHandling(row.querySelector(".dt-thumb"));
 
-  // Keep the preview thumbnail in sync with the path field
-  imgInput?.addEventListener("input", () => updateThumb(row));
+  // Keep the row thumbnail and live preview in sync with the path field
+  imgInput?.addEventListener("input", () => {
+    updateThumb(row);
+    refreshPreview(fieldset);
+  });
 
   row.querySelector(".dt-file-picker")?.addEventListener("click", () => {
     const FP = getFilePicker();
@@ -231,6 +266,7 @@ function activateRowListeners(row, fieldset, tokenDoc) {
         imgInput.value = path;
         updateThumb(row);
         saveThresholds(fieldset, tokenDoc);
+        refreshPreview(fieldset);
       },
     }).browse();
   });
@@ -238,6 +274,7 @@ function activateRowListeners(row, fieldset, tokenDoc) {
   row.querySelector(".dt-remove")?.addEventListener("click", () => {
     row.remove();
     saveThresholds(fieldset, tokenDoc);
+    refreshPreview(fieldset);
   });
 }
 
@@ -248,23 +285,83 @@ function updateThumb(row) {
   const thumb = row.querySelector(".dt-thumb");
   const path = row.querySelector(".dt-img")?.value?.trim() ?? "";
   if (!thumb) return;
+  thumb.classList.remove("broken");
   thumb.src = path;
   thumb.classList.toggle("empty", !path);
+}
+
+/**
+ * Add broken-image feedback to a thumbnail: a red border on load failure
+ * instead of silently staying blank. Ignores thumbs with no path set.
+ */
+function wireThumbErrorHandling(thumb) {
+  if (!thumb) return;
+  thumb.addEventListener("error", () => {
+    if (!thumb.classList.contains("empty")) thumb.classList.add("broken");
+  });
+  thumb.addEventListener("load", () => thumb.classList.remove("broken"));
+}
+
+/**
+ * Read threshold rows currently in the DOM (including unsaved edits) as
+ * plain { threshold, img } objects, for live preview matching.
+ */
+function readThresholdsFromDOM(fieldset) {
+  const thresholds = [];
+  fieldset.querySelectorAll(".threshold-row").forEach((row) => {
+    const threshold = Number(row.querySelector(".dt-threshold")?.value ?? 100);
+    const img = row.querySelector(".dt-img")?.value?.trim() ?? "";
+    if (img) thresholds.push({ threshold, img });
+  });
+  return thresholds;
+}
+
+/**
+ * Find the threshold row matching the tightest band for a given HP%,
+ * mirroring resolveImage()'s ascending-sort/first-match logic.
+ */
+function resolveActiveRow(fieldset, hpPercent) {
+  const rows = [...fieldset.querySelectorAll(".threshold-row")];
+  const entries = rows
+    .map((row) => ({ row, threshold: Number(row.querySelector(".dt-threshold")?.value ?? 100) }))
+    .sort((a, b) => a.threshold - b.threshold);
+  return entries.find((entry) => hpPercent <= entry.threshold)?.row ?? null;
+}
+
+/**
+ * Update the live preview thumbnail and active-row highlight for a given
+ * hypothetical HP%. Pure UI — never touches actor or token data.
+ */
+function updatePreview(fieldset, hpPercent) {
+  const valueEl = fieldset.querySelector(".dt-preview-value");
+  if (valueEl) valueEl.textContent = `${Math.round(hpPercent)}%`;
+
+  const previewThumb = fieldset.querySelector(".dt-preview-thumb");
+  if (previewThumb) {
+    const img = resolveImage(hpPercent, readThresholdsFromDOM(fieldset));
+    previewThumb.classList.remove("broken");
+    previewThumb.src = img ?? "";
+    previewThumb.classList.toggle("empty", !img);
+  }
+
+  fieldset.querySelectorAll(".threshold-row").forEach((row) => row.classList.remove("dt-active-row"));
+  resolveActiveRow(fieldset, hpPercent)?.classList.add("dt-active-row");
+}
+
+/**
+ * Re-run the live preview at the slider's current position, e.g. after a
+ * threshold row is added, removed, or edited.
+ */
+function refreshPreview(fieldset) {
+  const slider = fieldset.querySelector(".dt-preview-slider");
+  updatePreview(fieldset, Number(slider?.value ?? 100));
 }
 
 /**
  * Read all threshold rows from the DOM and persist to token flags.
  */
 async function saveThresholds(fieldset, tokenDoc) {
-  const rows = fieldset.querySelectorAll(".threshold-row");
-  const thresholds = [];
-  rows.forEach((row) => {
-    const threshold = Number(row.querySelector(".dt-threshold")?.value ?? 100);
-    const img = row.querySelector(".dt-img")?.value?.trim() ?? "";
-    if (img) {
-      thresholds.push({ threshold, img });
-    }
-  });
+  const thresholds = readThresholdsFromDOM(fieldset);
   await tokenDoc.setFlag(MODULE_ID, "thresholds", thresholds);
   // Apply the new configuration immediately so the GM sees the effect
   refreshToken(tokenDoc);

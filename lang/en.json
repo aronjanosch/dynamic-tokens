@@ -3,6 +3,8 @@
   "DYNAMIC_TOKENS.TrackedAttribute": "Tracked Attribute",
   "DYNAMIC_TOKENS.TrackedAttributeHint": "The attribute used to calculate HP percentage for image swapping.",
   "DYNAMIC_TOKENS.None": "None",
+  "DYNAMIC_TOKENS.PreviewHp": "Preview HP%",
+  "DYNAMIC_TOKENS.PreviewHpHint": "Scrub a hypothetical HP% to preview which image would resolve and which threshold is active. Starts at the token's current HP%; doesn't change actor data.",
   "DYNAMIC_TOKENS.HpAtMost": "HP ≤",
   "DYNAMIC_TOKENS.ImagePlaceholder": "path/to/image.png",
   "DYNAMIC_TOKENS.BrowseFiles": "Browse Files",
