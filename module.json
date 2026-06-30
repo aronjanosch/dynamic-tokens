@@ -2,7 +2,7 @@
   "id": "dynamic-tokens",
   "title": "Dynamic Tokens",
   "description": "Automatically swap token images based on HP thresholds. System-agnostic — configure which attribute path represents HP.",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "authors": [
     {
       "name": "Aron",
