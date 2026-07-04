@@ -301,18 +301,22 @@ function activateListeners(fieldset, tokenDoc) {
     row.classList.add("threshold-row");
     row.dataset.index = index;
     row.innerHTML = `
-      <div class="form-fields">
-        <input type="number" class="dt-threshold" aria-label="${game.i18n.localize("DYNAMIC_TOKENS.HpAtMost")}" value="100" min="0" max="100" step="1" placeholder="%" />
-        <span>%</span>
-        <img class="dt-thumb empty" src="" alt="" />
+      <div class="dt-row-fields">
+        <div class="dt-row-line">
+          <input type="number" class="dt-threshold" aria-label="${game.i18n.localize("DYNAMIC_TOKENS.HpAtMost")}" value="100" min="0" max="100" step="1" placeholder="%" />
+          <span>%</span>
+        </div>
         <input type="text" class="dt-img" value="" placeholder="${game.i18n.localize("DYNAMIC_TOKENS.ImagePlaceholder")}" />
-        <button type="button" class="dt-file-picker" title="${game.i18n.localize("DYNAMIC_TOKENS.BrowseFiles")}">
-          <i class="fa-solid fa-file-import"></i>
-        </button>
-        <button type="button" class="dt-remove" title="${game.i18n.localize("DYNAMIC_TOKENS.RemoveThreshold")}">
-          <i class="fa-solid fa-trash"></i>
-        </button>
+        <div class="dt-row-line dt-row-buttons">
+          <button type="button" class="dt-file-picker" title="${game.i18n.localize("DYNAMIC_TOKENS.BrowseFiles")}">
+            <i class="fa-solid fa-file-import"></i>
+          </button>
+          <button type="button" class="dt-remove" title="${game.i18n.localize("DYNAMIC_TOKENS.RemoveThreshold")}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </div>
+      <img class="dt-thumb empty" src="" alt="" />
     `;
     container.appendChild(row);
     activateRowListeners(row, fieldset, tokenDoc);

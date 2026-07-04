@@ -22,18 +22,22 @@
 <div class="dynamic-tokens-thresholds">
   {{#each thresholds}}
   <div class="threshold-row" data-index="{{@index}}">
-    <div class="form-fields">
-      <input type="number" class="dt-threshold" aria-label="{{localize "DYNAMIC_TOKENS.HpAtMost"}}" value="{{this.threshold}}" min="0" max="100" step="1" placeholder="%" />
-      <span>%</span>
-      <img class="dt-thumb{{#unless this.img}} empty{{/unless}}" src="{{this.img}}" alt="" />
+    <div class="dt-row-fields">
+      <div class="dt-row-line">
+        <input type="number" class="dt-threshold" aria-label="{{localize "DYNAMIC_TOKENS.HpAtMost"}}" value="{{this.threshold}}" min="0" max="100" step="1" placeholder="%" />
+        <span>%</span>
+      </div>
       <input type="text" class="dt-img" value="{{this.img}}" placeholder="{{localize "DYNAMIC_TOKENS.ImagePlaceholder"}}" />
-      <button type="button" class="dt-file-picker" title="{{localize "DYNAMIC_TOKENS.BrowseFiles"}}">
-        <i class="fa-solid fa-file-import"></i>
-      </button>
-      <button type="button" class="dt-remove" title="{{localize "DYNAMIC_TOKENS.RemoveThreshold"}}">
-        <i class="fa-solid fa-trash"></i>
-      </button>
+      <div class="dt-row-line dt-row-buttons">
+        <button type="button" class="dt-file-picker" title="{{localize "DYNAMIC_TOKENS.BrowseFiles"}}">
+          <i class="fa-solid fa-file-import"></i>
+        </button>
+        <button type="button" class="dt-remove" title="{{localize "DYNAMIC_TOKENS.RemoveThreshold"}}">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
+    <img class="dt-thumb{{#unless this.img}} empty{{/unless}}" src="{{this.img}}" alt="" />
   </div>
   {{/each}}
 </div>
