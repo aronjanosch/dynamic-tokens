@@ -8,9 +8,11 @@ macros, no per-system setup.
 It is **system-agnostic**: you choose which attribute represents HP, so it works
 in dnd5e, Pathfinder, Daggerheart, and homebrew systems alike.
 
-## Screenshot
+## Screenshots
 
 ![Dynamic Token Images config in the Token Config Appearance tab](docs/images/token-config.png)
+
+![Advanced window: status-effect overrides and per-threshold random image pools](docs/images/advanced-config.png)
 
 ## Features
 
@@ -71,8 +73,8 @@ the percentage is inverted automatically so thresholds still mean "remaining HP"
 
 ## Compatibility
 
-- **Foundry VTT v13** (verified). Uses the v13 ApplicationV2 Token Config and the
-  forward-compatible `FilePicker` namespace.
+- **Foundry VTT v13+** (verified through v14). Uses the v13 ApplicationV2 Token
+  Config and the forward-compatible `FilePicker` namespace.
 
 ## How it works
 
