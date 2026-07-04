@@ -1,6 +1,12 @@
 const MODULE_ID = "dynamic-tokens";
 const DEFAULT_ATTRIBUTE = "resources.hitPoints";
 
+// Every auto-save (threshold edit, image pick, attribute change) updates the
+// token document, which makes Foundry fully re-render TokenConfig and wipe
+// the appearance tab we inject into — resetting scroll to the top. Track the
+// last scroll position per open sheet so onRenderTokenConfig can restore it.
+const scrollPositions = new WeakMap();
+
 /* ---------------------------------------- */
 /*  Helpers                                  */
 /* ---------------------------------------- */
@@ -68,7 +74,7 @@ function pickWeightedImage(images) {
  * Returns the path relative to actor.system (e.g. "resources.hitPoints").
  */
 function getAttribute(tokenDoc) {
-  return tokenDoc.getFlag(MODULE_ID, "attribute") ?? null;
+  return tokenDoc.getFlag(MODULE_ID, "attribute") ?? DEFAULT_ATTRIBUTE;
 }
 
 /**
@@ -206,8 +212,21 @@ async function onRenderTokenConfig(app, element) {
   const tokenDoc = app.document ?? app.token;
   if (!tokenDoc) return;
 
+  // Track scroll position on this sheet's scrollable content so it can be
+  // restored after a re-render (see scrollPositions comment above).
+  const scrollContainer = element.querySelector(".window-content") ?? element;
+  if (app._dtScrollContainer !== scrollContainer) {
+    app._dtScrollContainer = scrollContainer;
+    scrollContainer.addEventListener("scroll", () => {
+      scrollPositions.set(app, scrollContainer.scrollTop);
+    });
+  }
+
   // Avoid duplicate injection on re-render
-  if (element.querySelector(".dynamic-tokens-fieldset")) return;
+  if (element.querySelector(".dynamic-tokens-fieldset")) {
+    if (scrollPositions.has(app)) scrollContainer.scrollTop = scrollPositions.get(app);
+    return;
+  }
 
   // Find the appearance tab content panel
   const appearanceTab = element.querySelector('div.tab[data-tab="appearance"]');
@@ -256,8 +275,7 @@ async function onRenderTokenConfig(app, element) {
       dtSelect.appendChild(child.cloneNode(true));
     }
     // Set current value from flags
-    const savedAttr = getAttribute(tokenDoc) ?? DEFAULT_ATTRIBUTE;
-    dtSelect.value = savedAttr;
+    dtSelect.value = getAttribute(tokenDoc);
   }
 
   // Append at the bottom of the appearance tab
@@ -266,6 +284,10 @@ async function onRenderTokenConfig(app, element) {
   // Wire up event listeners
   activateListeners(fieldset, tokenDoc);
   updatePreview(fieldset, previewPercent);
+
+  // The native re-render that just rebuilt this tab reset scroll to the top;
+  // put it back where the user had it.
+  if (scrollPositions.has(app)) scrollContainer.scrollTop = scrollPositions.get(app);
 }
 
 // Hook into both placed-token config and prototype-token config
