@@ -29,8 +29,8 @@
 
 .dynamic-tokens-fieldset .threshold-row .dt-thumb {
   flex: 0 0 auto;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
   object-fit: cover;
   border: 1px solid var(--color-border-light-tertiary, #999);
   border-radius: 3px;
@@ -57,12 +57,14 @@
 
 .dynamic-tokens-fieldset .dt-preview-group .form-fields {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem;
 }
 
 .dynamic-tokens-fieldset .dt-preview-slider {
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .dynamic-tokens-fieldset .dt-preview-value {
@@ -73,8 +75,8 @@
 
 .dynamic-tokens-fieldset .dt-preview-thumb {
   flex: 0 0 auto;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
   object-fit: cover;
   border: 1px solid var(--color-border-light-tertiary, #999);
   border-radius: 3px;
