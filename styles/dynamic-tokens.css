@@ -12,8 +12,10 @@
 }
 
 .dynamic-tokens-fieldset .threshold-row .dt-threshold {
-  width: 4rem;
+  width: 3rem;
   text-align: center;
+  font-size: var(--font-size-13, 0.8125rem);
+  padding: 0.25rem;
 }
 
 .dynamic-tokens-fieldset .threshold-row .dt-img {
@@ -27,8 +29,8 @@
 
 .dynamic-tokens-fieldset .threshold-row .dt-thumb {
   flex: 0 0 auto;
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   object-fit: cover;
   border: 1px solid var(--color-border-light-tertiary, #999);
   border-radius: 3px;
@@ -36,7 +38,7 @@
 }
 
 /* No image set yet: show an empty placeholder box instead of a broken icon */
-.dynamic-tokens-fieldset .threshold-row .dt-thumb.empty {
+.dynamic-tokens-fieldset .dt-thumb.empty {
   visibility: hidden;
 }
 
@@ -67,6 +69,16 @@
   flex: 0 0 auto;
   width: 3rem;
   text-align: right;
+}
+
+.dynamic-tokens-fieldset .dt-preview-thumb {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: cover;
+  border: 1px solid var(--color-border-light-tertiary, #999);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .dynamic-tokens-fieldset .dynamic-tokens-details > summary {
