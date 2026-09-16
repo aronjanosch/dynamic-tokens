@@ -532,8 +532,15 @@ class DynamicTokensAdvancedConfig extends foundry.applications.api.HandlebarsApp
 
   async _prepareContext(_options) {
     const thresholds = (getThresholds(this.tokenDoc) ?? []).map((entry) => ({
-      threshold: entry.threshold,
-      images: normalizeThresholdImages(entry),
+      threshold: entry?.threshold ?? 0,
+      // Unlike normalizeThresholdImages(), keep entries with an empty img —
+      // "Add pool image" persists a blank placeholder and re-renders, so
+      // filtering here would strip the row and make the button look dead.
+      images: Array.isArray(entry?.images)
+        ? entry.images.map((i) => ({ img: i?.img ?? "", weight: i?.weight > 0 ? i.weight : 1 }))
+        : entry?.img
+          ? [{ img: entry.img, weight: 1 }]
+          : [],
     }));
     const statusOverrides = getStatusOverrides(this.tokenDoc) ?? [];
     return { thresholds, statusOverrides };
